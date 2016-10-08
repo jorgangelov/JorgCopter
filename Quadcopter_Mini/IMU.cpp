@@ -287,7 +287,9 @@ void cImu::update()
 
     // Update MGN
     cQuaternion w_delta_magn(0,0,0,0);
-    float mx = data.mx,my = data.my,mz = data.mz,m,m1m,m2m,m3m, Kpm = 0.03;
+
+    
+    float mx = data.mx,my = data.my,mz = data.mz, Kpm = 0.03;
     
     cQuaternion s_bm(0,mx,my,mz),s_iH, m_iH(0,1,0,0);
     s_iH = Q*s_bm*Q.conjugated();    

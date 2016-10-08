@@ -109,9 +109,8 @@ Controller.calculatePseudoControl(&Imu,&command);
 // Control Allocation
 Controller.controlAllocation();
 
-
-// Test Speed of Controller
 /*
+// Test Speed of Controller
 static int i = 0;
 static float mean_dt = 0;
 mean_dt += Imu.dt;
