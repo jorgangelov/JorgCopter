@@ -23,20 +23,19 @@ struct tSensor
     float wx;
     float wy;
     float wz;
-
-    float mx;
-    float my;
-    float mz;
-    
     float temp;
 
     float bias_wx;
     float bias_wy;
     float bias_wz;
+};
 
-    float bias_mx;
-    float bias_my;
-    float bias_mz;
+
+struct tEuler
+{
+    float phi;
+    float theta;
+    float psi;
 };
 
 
@@ -69,7 +68,6 @@ public:
     bool isValid();
     void calibrate(bool cal=true);
     void gyro_calibration();
-    void magn_calibration();
     tSensor data;
     cQuaternion w_delta_I;
 
