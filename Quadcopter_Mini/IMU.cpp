@@ -40,14 +40,13 @@ void cImu::begin()
     w_delta_I(1) = 0;
 
     data.bias_mx = 95;
-    data.bias_my = 0;
-    data.bias_mz = -35;
+    data.bias_my = 15;
+    data.bias_mz = -15;
 
 
     time_of_calibration = 0;
     t = millis();
 
-    memset(&data,0,sizeof(data));
 
     
     
@@ -288,21 +287,17 @@ void cImu::update()
 
     // Update MGN
     cQuaternion w_delta_magn(0,0,0,0);
-    float mx = data.mx,my = data.my,mz = data.mz,m,m1m,m2m,m3m, Kpm = 1;
-    m = sqrt(mx*mx+my*my+mz*mz);
-
-    m1m = mx/m;
-    m2m = my/m;
-    m3m = mz/m;
-      
+    float mx = data.mx,my = data.my,mz = data.mz,m,m1m,m2m,m3m, Kpm = 0.03;
     
-    cQuaternion s_bm(0,m1m,m2m,m3m),s_iH, m_iH(0,1,0,0);
-    s_iH = Q*s_bm*Q.conjugated();
-    s_iH(4) = 0;
+    cQuaternion s_bm(0,mx,my,mz),s_iH, m_iH(0,1,0,0);
+    s_iH = Q*s_bm*Q.conjugated();    
+    s_iH(2) /= sqrt (s_iH(2)*s_iH(2) + s_iH(3)*s_iH(3) );
+    s_iH(3) /= sqrt (s_iH(2)*s_iH(2) + s_iH(3)*s_iH(3) );     
+    s_iH(4) = 0;    
     w_delta_magn = Q.conjugated()*(s_iH*m_iH)*Q;
+  
 
-
-    
+     
     cQuaternion q_delta = (w_bar + w_delta*Kp+w_delta_I*KI + w_delta_magn*Kpm)*0.5*dt;
     q_delta(1) = 1;
     Q = Q*q_delta;
@@ -412,7 +407,7 @@ void cImu::magn_calibration()
 
   while( (currentTime-start_of_calibration) < calibration_duration)
   {
-    getData();
+    readData();
 
     // mx
     if (data.mx < mx_min)
