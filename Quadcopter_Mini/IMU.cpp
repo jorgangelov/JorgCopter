@@ -4,29 +4,12 @@
 
 void cImu::begin()
 {
-  // Wake Up MPU6500
     Wire.begin();
     Wire.beginTransmission(0x68);
     Wire.write(0x6B);
     Wire.write(0);
     Wire.endTransmission(true);
     delay(5);
-
-    // Bypass
-    Wire.beginTransmission(0x68);
-    Wire.write(0x37);
-    Wire.write(0x02);
-    Wire.endTransmission(true);
-    delay(5);
-
-    // Mgnt Mode
-    Wire.beginTransmission(0x0C);
-    Wire.write(0x0A);
-    Wire.write(0x02);
-    Wire.endTransmission(true);
-    delay(5);
-
-    // DLPF
     Wire.beginTransmission(0x68);
     Wire.write(0x1A);
     Wire.write(0x04); // oder 0x05
@@ -39,9 +22,7 @@ void cImu::begin()
 
     w_delta_I(1) = 0;
 
-    data.bias_mx = 95;
-    data.bias_my = 0;
-    data.bias_mz = -35;
+    
 
 
     time_of_calibration = 0;
@@ -107,16 +88,6 @@ void cImu::readData()
     wy = (float)(Wire.read()<<8|Wire.read())/6900;
     wz = (float)(Wire.read()<<8|Wire.read())/6900;
 
-
-    Wire.beginTransmission(0x0C);
-    Wire.write(0x03);
-    Wire.endTransmission(false);
-    Wire.requestFrom(0x0C,7,true);
-    float mx,my,mz;
-    my = (float)(Wire.read()|Wire.read()<<8);
-    mx = (float)(Wire.read()|Wire.read()<<8);
-    mz = -1*(float)(Wire.read()|Wire.read()<<8);
-    
     if (ax*ax + ay*ay + az*az > 0.01) {
     data.ax = ax;
     data.ay = ay;
@@ -127,10 +98,6 @@ void cImu::readData()
     data.wx = wx;
     data.wy = wy;
     data.wz = wz;
-
-    data.mx = mx;
-    data.my = my;
-    data.mz = mz;
     }
     
 }
@@ -151,10 +118,6 @@ readData();
 data.wx -= data.bias_wx;
 data.wy -= data.bias_wy;
 data.wz -= data.bias_wz;
-
-data.mx -= data.bias_mx;
-data.my -= data.bias_my;
-data.mz -= data.bias_mz;
 
 ////////
 
@@ -267,7 +230,7 @@ void cImu::update()
 
         
     
-    // Update ACC
+    // Update
     cQuaternion w_delta(0,0,0,0);
     float ax = data.ax,ay = data.ay,az = data.az,a,m1,m2,m3, Kp = 0.1, KI=0.0025;
     a = sqrt(ax*ax+ay*ay+az*az);
@@ -286,24 +249,10 @@ void cImu::update()
 
 
 
-    // Update MGN
-    cQuaternion w_delta_magn(0,0,0,0);
-    float mx = data.mx,my = data.my,mz = data.mz,m,m1m,m2m,m3m, Kpm = 1;
-    m = sqrt(mx*mx+my*my+mz*mz);
-
-    m1m = mx/m;
-    m2m = my/m;
-    m3m = mz/m;
-      
-    
-    cQuaternion s_bm(0,m1m,m2m,m3m),s_iH, m_iH(0,1,0,0);
-    s_iH = Q*s_bm*Q.conjugated();
-    s_iH(4) = 0;
-    w_delta_magn = Q.conjugated()*(s_iH*m_iH)*Q;
 
 
     
-    cQuaternion q_delta = (w_bar + w_delta*Kp+w_delta_I*KI + w_delta_magn*Kpm)*0.5*dt;
+    cQuaternion q_delta = (w_bar + w_delta*Kp+w_delta_I*KI)*0.5*dt;
     q_delta(1) = 1;
     Q = Q*q_delta;
     Q.norm();
@@ -395,58 +344,6 @@ void cImu::gyro_calibration()
   data.bias_wy = gby;
   data.bias_wz = gbz;
   
-  
-}
-
-
-void cImu::magn_calibration()
-{
-  long start_of_calibration = millis();
-  long calibration_duration = 30000;
-  long currentTime = millis();
-
-  float mx_max=-50000,mx_min=50000;
-  float my_max=-50000,my_min=50000;
-  float mz_max=-50000,mz_min=50000;
-    Serial.println("Calibrating Magnetometer");
-
-  while( (currentTime-start_of_calibration) < calibration_duration)
-  {
-    getData();
-
-    // mx
-    if (data.mx < mx_min)
-    mx_min = data.mx;
-    
-    if (data.mx > mx_max)
-    mx_max = data.mx;
-    
-    // my
-    if (data.my < my_min)
-    my_min = data.my;
-    
-    if (data.my > my_max)
-    my_max = data.my;
-
-
-    // mz
-    if (data.mz < mz_min)
-    mz_min = data.mz;
-    
-    if (data.mz > mz_max)
-    mz_max = data.mz;
-
-
-    
-    currentTime = millis();
-  }
-  Serial.println(mx_max);
-  Serial.println(mx_min);
-  Serial.println(my_max);
-  Serial.println(my_min);
-  Serial.println(mz_max);
-  Serial.println(mz_min);
-  while(1);  
   
 }
 
