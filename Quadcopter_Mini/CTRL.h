@@ -33,7 +33,6 @@ class cController
     q_e_I(2) = 0;
     q_e_I(3) = 0;
     q_e_I(4) = 0;
-    e_r_I = 0;
     wx_F_old=0;
     wy_F_old=0;
     wz_F_old=0;
@@ -48,7 +47,7 @@ class cController
   ServoTimer2 Motor1, Motor2, Motor3, Motor4;
 
   cQuaternion q_e_I;
-  float e_r_I,wx_F_old,wy_F_old,wz_F_old;
+  float wx_F_old,wy_F_old,wz_F_old;
   
 };
 

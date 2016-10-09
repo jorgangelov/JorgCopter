@@ -100,7 +100,6 @@ cQuaternion q_e(1,0,0,0), q_BIz_d(0,0,0,0);
 // Gains
 float I_enable = 1;
 float Kp=175, Kd=40, KI=40, Kdd = 2.5;
-float r_damp =0,r_damp_I = 0, e_r = 0;
 // Gains
 float wdot[3], T;
 const int8_t I_TH = 0;
@@ -136,27 +135,18 @@ wz_F_old = wz_F;
 //q_e
 q_e = (q_BIz_d*q_IzI_d)*Imu->Q;
 
-//e_r
-e_r = ((command->r)/20.0) - Imu->data.wz;
-
 //q_e_I
 if (I_enable > 0)
 q_e_I = q_e_I + (q_e*Imu->dt*(command->T > I_TH));
 
-
-//e_r_I
-if (I_enable > 0)
-e_r_I = e_r_I + (e_r*Imu->dt*(command->T > I_TH));
-
 if (command->T <= -100)
 {
 q_e_I = q_e_I*0;
-e_r_I = 0;
 }
 
 wdot[0] = -2*(Kp*q_e(2) + KI*q_e_I(2) + Kd*0.5*Imu->data.wx ) -Kdd*wxdot_F;
 wdot[1] = -2*(Kp*q_e(3) + KI*q_e_I(3) + Kd*0.5*Imu->data.wy ) -Kdd*wydot_F;
-wdot[2] = -2*(Kp*q_e(4) + KI*q_e_I(4) + Kd*0.5*Imu->data.wz ) + r_damp*e_r + r_damp_I*e_r_I;
+wdot[2] = -2*(Kp*q_e(4) + KI*q_e_I(4) + Kd*0.5*Imu->data.wz );
 
 pseudo_control.M[0] = (wdot[0]/100) * (command->T >= -100);
 pseudo_control.M[1] = (wdot[1]/100) * (command->T >= -100);
