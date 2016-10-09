@@ -95,7 +95,7 @@ Motor4.write(servo4);
 
 void cController::calculatePseudoControl(cImu* Imu,tCommand* command)
 {
-cQuaternion q_e(1,0,0,0), q_BIz_d(0,0,0,0);
+cQuaternion q_e(1,0,0,0);
 
 // Gains
 float I_enable = 1;
@@ -108,8 +108,6 @@ const int8_t I_TH = 0;
 q_BIz_d(2) = (command->q_BI_x)/300.0;
 q_BIz_d(3) = (command->q_BI_y)/300.0;
 q_BIz_d(1) = sqrt(1 - q_BIz_d(2)*q_BIz_d(2) - q_BIz_d(3)*q_BIz_d(3));
-// q_IzI_d
-static cQuaternion q_IzI_d;
 
 
 ////// WDOT
@@ -123,11 +121,6 @@ wy_F = (1/K_wdot)*wy_F_old + (wdot_freq*Imu->dt/K_wdot)*Imu->data.wy;
 wydot_F = (wy_F-wy_F_old)/Imu->dt;
 wy_F_old = wy_F;
 
-/*
-wz_F = (1/K_wdot)*wz_F_old + (wdot_freq*Imu->dt/K_wdot)*Imu->data.wz;
-wzdot_F = (wz_F-wz_F_old)/Imu->dt;
-wz_F_old = wz_F;
-*/
 ////// WDOT
 
 

@@ -46,7 +46,7 @@ class cController
   tPseudoControl pseudo_control;
   ServoTimer2 Motor1, Motor2, Motor3, Motor4;
 
-  cQuaternion q_e_I;
+  cQuaternion q_e_I, q_BIz_d, q_IzI_d;
   float wx_F_old,wy_F_old,wz_F_old;
   
 };
