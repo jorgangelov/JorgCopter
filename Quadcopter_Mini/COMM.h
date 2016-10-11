@@ -1,7 +1,7 @@
 #ifndef COMM_H
 #define COMM_H
 
-#define UART_BAUD 9600
+#define UART_BAUD 115200
 
 #include <Arduino.h>
 

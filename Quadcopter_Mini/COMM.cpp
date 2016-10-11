@@ -34,11 +34,12 @@ void cSerial::show()
 {
     if (this->available())
         {
-        char *data = new char [this->available()];
+        char* data = new char [this->available()];
         bytes = this->available();
         this->getData(data);
         data[bytes] = '\0';
         Serial.println(data);
+        delete data;
         }
 }
 
