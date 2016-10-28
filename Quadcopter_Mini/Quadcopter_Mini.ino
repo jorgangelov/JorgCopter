@@ -1,4 +1,5 @@
 #include "GLOBAL.h"
+#define DEBUG_MODE false
 
 
 int operation_mode = 1;
@@ -110,20 +111,21 @@ Controller.calculatePseudoControl(&Imu,&command);
 Controller.controlAllocation();
 
 
-// Test Speed of Controller
-/*
-static int i = 0;
-static float mean_dt = 0;
-mean_dt += Imu.dt;
-i++;
-if (i >= 100)
-{
-  mean_dt /= i;
-  Serial.println(mean_dt,5);
-  mean_dt = 0;
-  i = 0;
-}
-*/
+  if (DEBUG_MODE)
+  {
+    // Test Speed of Controller
+    static int i = 0;
+    static float mean_dt = 0;
+    mean_dt += Imu.dt;
+    i++;
+    if (i >= 1000)
+    {
+      mean_dt /= i;
+      Serial.println(mean_dt, 5);    
+      mean_dt = 0;
+      i = 0;
+    }
+  }
 
 
 }
