@@ -99,15 +99,15 @@ cQuaternion q_e(1,0,0,0), q_BIz_d(0,0,0,0);
 
 // Gains
 float I_enable = 1;
-float Kp=175, Kd=40, KI=40, Kdd = 2.5;
+float Kp=220, Kd=40, KI=20, Kdd = 2.5;
 float r_damp =40,r_damp_I = 20, e_r = 0;
 // Gains
 float wdot[3], T;
 const int8_t I_TH = 0;
 
 // q_BIz_d
-q_BIz_d(2) = (command->q_BI_x)/300.0;
-q_BIz_d(3) = (command->q_BI_y)/300.0;
+q_BIz_d(2) = (command->q_BI_x)/330.0;
+q_BIz_d(3) = (command->q_BI_y)/330.0;
 q_BIz_d(1) = sqrt(1 - q_BIz_d(2)*q_BIz_d(2) - q_BIz_d(3)*q_BIz_d(3));
 
 
