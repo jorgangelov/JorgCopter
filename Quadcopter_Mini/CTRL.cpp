@@ -99,7 +99,7 @@ cQuaternion q_e(1,0,0,0), q_BIz_d(0,0,0,0);
 
 // Gains
 float I_enable = 1;
-float Kp=220, Kd=40, KI=20, Kdd = 2.5;
+float Kp=220, Kd=40, KI=30, Kdd = 3;
 float r_damp =40,r_damp_I = 20, e_r = 0;
 // Gains
 float wdot[3], T;

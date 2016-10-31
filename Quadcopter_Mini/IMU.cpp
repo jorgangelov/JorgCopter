@@ -170,7 +170,7 @@ void cImu::update()
     
     // Update
     cQuaternion w_delta(0,0,0,0);
-    float ax = data.ax,ay = data.ay,az = data.az,a,m1,m2,m3, Kp = 0.1, KI=0.0025;
+    float ax = data.ax,ay = data.ay,az = data.az,a,m1,m2,m3, Kp = 0.2, KI=0.01;
     a = sqrt(ax*ax+ay*ay+az*az);
     if (a > 1 && a < 20)
     {
