@@ -49,6 +49,34 @@ public:
 cQuaternion operator-(cQuaternion q1, cQuaternion q2);
 cQuaternion operator*(float f, cQuaternion q);
 
+
+
+class cPT1Filter
+{
+  public:
+  cPT1Filter(float _T_f)
+  {
+    T_f = _T_f;
+    y_ = 0;
+    ydot_ = 0;
+    u_ = 0;
+  }
+  void update(float _u_k, float _T_s);
+  float y()
+  {
+    return y_;
+  }
+  
+  float ydot()
+  {
+    return ydot_;
+  }
+
+  private:
+  float T_f, T_s, y_, ydot_,u_;
+  
+};
+
 // Definitions
 template <uint8_t dim> inline float& cVector<dim>::operator()(uint8_t _i)
 {
@@ -176,6 +204,14 @@ inline cQuaternion operator-(cQuaternion q1, cQuaternion q2)
 inline cQuaternion operator*(float f, cQuaternion q)
 {
     return q*f;
+}
+
+
+inline void cPT1Filter::update(float _u_k, float _T_s)
+{
+  ydot_ = (1/T_f) * (u_ - y_);
+  y_ = y_  + _T_s * ydot_;
+  u_ = _u_k; 
 }
 
 

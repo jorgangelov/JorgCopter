@@ -2,7 +2,7 @@
 #define GLOBAL_H
 
 #include "COMM.h"
-#include "IMU.h"
+#include "Navigation.h"
 #include "CTRL.h"
 
 void process_command();

@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "ServoTimer2.h"
 
-#include "IMU.h"
+#include "Navigation.h"
 #include "COMM.h"
 
 #define QUADCONFIGURATION 1 // 0 = "+"      1 = "x"
