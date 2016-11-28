@@ -103,3 +103,17 @@ void cMPU6050::getData()
 }
 
 
+
+
+
+
+void cCustomIMU::begin()
+{
+
+}
+
+
+void cCustomIMU::getData()
+{
+
+}

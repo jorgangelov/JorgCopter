@@ -49,6 +49,13 @@ public:
 };
 
 
+class cCustomIMU: public cImuInterface
+{
+public:
+    void begin();
+    void getData();
+};
+
 
 
 #endif
