@@ -93,7 +93,7 @@ Motor4.write(servo4);
 
 
 
-void cController::calculatePseudoControl(cImu* Imu,tCommand* command)
+void cController::calculatePseudoControl(cNavigation *Navigation, tCommand* command)
 {
 cQuaternion q_e(1,0,0,0), q_BIz_d(0,0,0,0);
 
@@ -114,38 +114,34 @@ q_BIz_d(1) = sqrt(1 - q_BIz_d(2)*q_BIz_d(2) - q_BIz_d(3)*q_BIz_d(3));
 
 ////// WDOT
 float wdot_freq = 25, wx_F=0, wy_F=0, wz_F=0, wxdot_F=0, wydot_F=0, wzdot_F=0;
-float K_wdot = 1 + wdot_freq*Imu->dt;
-wx_F = (1/K_wdot)*wx_F_old + (wdot_freq*Imu->dt/K_wdot)*Imu->data.wx;
-wxdot_F = (wx_F-wx_F_old)/Imu->dt;
+float K_wdot = 1 + wdot_freq*Navigation->dt;
+wx_F = (1/K_wdot)*wx_F_old + (wdot_freq*Navigation->dt/K_wdot)*Navigation->Imu->data().wx;
+wxdot_F = (wx_F-wx_F_old)/Navigation->dt;
 wx_F_old = wx_F;
 
-wy_F = (1/K_wdot)*wy_F_old + (wdot_freq*Imu->dt/K_wdot)*Imu->data.wy;
-wydot_F = (wy_F-wy_F_old)/Imu->dt;
+wy_F = (1/K_wdot)*wy_F_old + (wdot_freq*Navigation->dt/K_wdot)*Navigation->Imu->data().wy;
+wydot_F = (wy_F-wy_F_old)/Navigation->dt;
 wy_F_old = wy_F;
 
-/*
-wz_F = (1/K_wdot)*wz_F_old + (wdot_freq*Imu->dt/K_wdot)*Imu->data.wz;
-wzdot_F = (wz_F-wz_F_old)/Imu->dt;
-wz_F_old = wz_F;
-*/
+
 ////// WDOT
 
 
 
 //q_e
-q_e = q_BIz_d*Imu->Q_IzB;
+q_e = q_BIz_d*Navigation->Q_IzB;
 
 //e_r
-e_r = ((command->r)/20.0) - Imu->data.wz;
+e_r = ((command->r)/20.0) - Navigation->Imu->data().wz;
 
 //q_e_I
 if (I_enable > 0)
-q_e_I = q_e_I + (q_e*Imu->dt*(command->T > I_TH));
+q_e_I = q_e_I + (q_e*Navigation->dt*(command->T > I_TH));
 
 
 //e_r_I
 if (I_enable > 0)
-e_r_I = e_r_I + (e_r*Imu->dt*(command->T > I_TH));
+e_r_I = e_r_I + (e_r*Navigation->dt*(command->T > I_TH));
 
 if (command->T <= -100)
 {
@@ -153,9 +149,9 @@ q_e_I = q_e_I*0;
 e_r_I = 0;
 }
 
-wdot[0] = -2*(Kp*q_e(2) + KI*q_e_I(2) + Kd*0.5*Imu->data.wx ) -Kdd*wxdot_F;
-wdot[1] = -2*(Kp*q_e(3) + KI*q_e_I(3) + Kd*0.5*Imu->data.wy ) -Kdd*wydot_F;
-wdot[2] = -2*(Kp*q_e(4) + KI*q_e_I(4) + Kd*0.5*Imu->data.wz ) + r_damp*e_r + r_damp_I*e_r_I;
+wdot[0] = -2*(Kp*q_e(2) + KI*q_e_I(2) + Kd*0.5*Navigation->Imu->data().wx ) -Kdd*wxdot_F;
+wdot[1] = -2*(Kp*q_e(3) + KI*q_e_I(3) + Kd*0.5*Navigation->Imu->data().wy ) -Kdd*wydot_F;
+wdot[2] = -2*(Kp*q_e(4) + KI*q_e_I(4) + Kd*0.5*Navigation->Imu->data().wz ) + r_damp*e_r + r_damp_I*e_r_I;
 
 pseudo_control.M[0] = (wdot[0]/100) * (command->T >= -100);
 pseudo_control.M[1] = (wdot[1]/100) * (command->T >= -100);

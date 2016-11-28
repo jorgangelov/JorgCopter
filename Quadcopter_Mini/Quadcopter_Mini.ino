@@ -5,35 +5,37 @@
 int operation_mode = 1;
 
 
-cSerial Uart;
-cImu Imu;
-cController Controller;
-cESP Esp;
-
-tCommand command = {0,0,0,0};
+cSerial *Uart;
+cNavigation *Navigation;
+cImuInterface *Imu;
+cController *Controller;
+cESP *Esp;
+tCommand *Command;
 
 
 
 void setup() 
 {
-pinMode(A0,INPUT);
-digitalWrite(A0,1);
-operation_mode = digitalRead(A0);
 
+    Uart = new cSerial;
+    Navigation = new cNavigation;
+    Imu = new cMPU6050;
+    Controller = new cController;
+    Esp = new cESP;
+    Command = new tCommand;
 
-if (operation_mode == 1)
-  {
   ////// Controller Init
-  Controller.begin();  
-  Controller.armMotors();  
+  Controller->begin();
+  Controller->armMotors();
   ////// Controller Init
 
   ////// IMU Init
-  Imu.begin();
+  Imu->begin();
+  Imu->calibrate();
   delay(50);
-  if (Imu.isValid() == false){
+  if (Imu->isValid() == false){
   Serial.begin(115200);
-  while (Imu.isValid() == false)
+  while (Imu->isValid() == false)
   {
     delay(1000);
     blink(3);
@@ -41,13 +43,12 @@ if (operation_mode == 1)
   }}
   ////// IMU Init
 
-
   ////// ESP Init
-  Esp.begin();
+  Esp->begin();
   delay(50);
-  if (Esp.isValid() == false){
+  if (Esp->isValid() == false){
    Serial.begin(115200);
-  while (Esp.isValid() == false)
+  while (Esp->isValid() == false)
   {
     delay(1000);
     blink(3);
@@ -55,9 +56,9 @@ if (operation_mode == 1)
   }}
 
   
-  Esp.setupAP();
+  Esp->setupAP();
   blink(2);
-  while( !Esp.isConnected() )
+  while( !Esp->isConnected() )
   {
     delay(100);
   }
@@ -65,28 +66,11 @@ if (operation_mode == 1)
   ////// ESP Init
 
   
-  Imu.gyro_calibration();
+  Navigation->begin(Imu);
   safe_mode();
 
   
-  }
-  
-  
-//////////////////////////////////////////////// DEBUG MODE
-if (operation_mode == 0)
-  {
-  Serial.begin(115200);
-  Serial.println("Setup Mode...");  
-  blink(3);
-  while(operation_mode == 0)
-      {
-        
 
-    
-      }
-  
-  }  
-//////////////////////////////////////////////// DEBUG MODE
 
 
 }
@@ -98,17 +82,18 @@ float time_wo_command = 0, time_wo_command_th=1;
 
 void loop()
 {
-// Get Sensor Data and Attitude  
-Imu.update();  
+
+// Get Navigation Solution
+Navigation->update();
 
 //Process Command
 process_command();
 
 // Calculate the Pseudo Control 
-Controller.calculatePseudoControl(&Imu,&command);
+Controller->calculatePseudoControl(Navigation,Command);
 
 // Control Allocation
-Controller.controlAllocation();
+Controller->controlAllocation();
 
 
   if (DEBUG_MODE)
@@ -116,7 +101,7 @@ Controller.controlAllocation();
     // Test Speed of Controller
     static int i = 0;
     static float mean_dt = 0;
-    mean_dt += Imu.dt;
+    mean_dt += Navigation->dt;
     i++;
     if (i >= 1000)
     {
@@ -143,22 +128,22 @@ void process_command()
 {
   /////////////////////////////////////////////////////Process Command
 // Check if a new commando has been received....
-if ( Esp.getCommand(command))
+if ( Esp->getCommand(Command))
   {
     time_wo_command = 0;
     PORTB &= ~(1<<PB5);
     /////////////////////////////////////////////////// OFF Command received
-    if (command.T <= -100 && command.r <= -100)
+    if (Command->T <= -100 && Command->r <= -100)
       {
 
                 
 
-        Controller.pseudo_control.M[0]=0;
-        Controller.pseudo_control.M[1]=0;
-        Controller.pseudo_control.M[2]=0;
-        Controller.pseudo_control.T=0;
+        Controller->pseudo_control.M[0]=0;
+        Controller->pseudo_control.M[1]=0;
+        Controller->pseudo_control.M[2]=0;
+        Controller->pseudo_control.T=0;
         // Control Allocation
-        Controller.controlAllocation();
+        Controller->controlAllocation();
 
         safe_mode();
   
@@ -168,13 +153,13 @@ if ( Esp.getCommand(command))
 // ...check if too much time has passed  
 else
   {
-    time_wo_command += Imu.dt;
+    time_wo_command += Navigation->dt;
     if (time_wo_command > time_wo_command_th)
       {
         PORTB |= (1<<PB5);
-        command.q_BI_x = 0 ;
-        command.q_BI_x = 0 ;
-        command.T = -110;
+        Command->q_BI_x = 0 ;
+        Command->q_BI_x = 0 ;
+        Command->T = -110;
       }
     
   }
@@ -192,17 +177,10 @@ void safe_mode()
 
         while(!start_cmd_received)
           {
-            Esp.getCommand(command);
-            if (command.T <= -100 && command.r >= 100)     // left TRIGGER + right DOWN
+            Esp->getCommand(Command);
+            if (Command->T <= -100 && Command->r >= 100)     // left TRIGGER + right DOWN
             start_cmd_received = true;
 
-            if (command.q_BI_y <= -100 && command.r >= 100) // left DOWN + right DOWN 
-            Imu.calibrate();
-
-            if (command.q_BI_y >= 100 && command.r <= -100) // left UP + right UP
-            Imu.calibrate(false);
-            
-            
             if (millis()-blink_t <= 20)
             {
             PORTB |= (1<<PB5);
@@ -214,7 +192,7 @@ void safe_mode()
             if (millis()-blink_t >= 700)
             blink_t = millis();
             
-            Imu.update();
+            Navigation->update();
           }
           PORTB &= ~(1<<PB5);
           blink(1);

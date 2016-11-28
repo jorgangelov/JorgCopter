@@ -42,7 +42,7 @@ class cController
   void armMotors();
   void calibrateMotors(long Min_ms = ESC_MIN_MS, long Max_ms = ESC_MAX_MS);
   void controlAllocation();
-  void calculatePseudoControl(cImu* Imu,tCommand* command);
+  void calculatePseudoControl(cNavigation *Navigation,tCommand *command);
   
   tPseudoControl pseudo_control;
   ServoTimer2 Motor1, Motor2, Motor3, Motor4;

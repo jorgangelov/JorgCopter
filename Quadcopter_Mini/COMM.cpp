@@ -277,7 +277,7 @@ uint32_t cESP::getPayload(char *buffer)
 
 
 
-bool cESP::getCommand(tCommand &command)
+bool cESP::getCommand(tCommand *Command)
 {
   char payload[6];
   int len = getPayload(payload);
@@ -285,10 +285,10 @@ bool cESP::getCommand(tCommand &command)
   {
     if (payload[0] == 126 && payload[5] == 127)
     {
-      command.q_BI_x = payload[1];
-      command.q_BI_y = payload[2];
-      command.r = payload[3];
-      command.T = payload[4];
+      Command->q_BI_x = payload[1];
+      Command->q_BI_y = payload[2];
+      Command->r = payload[3];
+      Command->T = payload[4];
       return true;
     }
     else

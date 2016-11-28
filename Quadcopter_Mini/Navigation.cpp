@@ -5,15 +5,8 @@
 void cNavigation::begin(cImuInterface *_Imu)
 {
     Imu = _Imu;
-    Imu->calibrate();
-
     w_delta_I(1) = 0;
-
-    
-
-
     t = millis();
-
 }
 
 

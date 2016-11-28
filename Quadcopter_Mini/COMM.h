@@ -6,6 +6,7 @@
 
 #include <Arduino.h>
 
+
 void blink(int n);
 void fastblink(int n);
 
@@ -13,6 +14,11 @@ void fastblink(int n);
 
 struct tCommand
 {
+    tCommand()
+    {
+     memset(this,0,sizeof(tCommand));
+    }
+
     int8_t q_BI_x;
     int8_t q_BI_y;
     int8_t r;
@@ -46,7 +52,7 @@ public:
   void flushBuffer();
   uint32_t getData(char *buffer);
   uint32_t getPayload(char *buffer);
-  bool getCommand(tCommand &command);
+  bool getCommand(tCommand *Command);
    
    
    
