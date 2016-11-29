@@ -83,7 +83,7 @@ void cSerial::flushBuffer()
 }
 
 
-void cESP::begin(long baud)
+void cESP::begin()
 {
 
 
@@ -109,6 +109,11 @@ void cESP::begin(long baud)
 }
 
 
+
+void cESP::setBaud(long _baud)
+{
+    baud = _baud;
+}
 
 
 void cESP::flushBuffer()

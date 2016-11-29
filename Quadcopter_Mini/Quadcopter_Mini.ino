@@ -7,9 +7,9 @@ int operation_mode = 1;
 
 cSerial *Uart;
 cNavigation *Navigation;
-cImuInterface *Imu;
+cMPU6050 *Imu;
 cController *Controller;
-cESP *Esp;
+cESP *Communication;
 tCommand *Command;
 
 
@@ -21,7 +21,7 @@ void setup()
     Navigation = new cNavigation;
     Imu = new cMPU6050;
     Controller = new cController;
-    Esp = new cESP;
+    Communication = new cESP;
     Command = new tCommand;
 
   ////// Controller Init
@@ -31,7 +31,6 @@ void setup()
 
   ////// IMU Init
   Imu->begin();
-  Imu->calibrate();
   delay(50);
   if (Imu->isValid() == false){
   Serial.begin(115200);
@@ -44,28 +43,29 @@ void setup()
   ////// IMU Init
 
   ////// ESP Init
-  Esp->begin();
+  Communication->setBaud();
+  Communication->begin();
   delay(50);
-  if (Esp->isValid() == false){
+  if (Communication->isValid() == false){
    Serial.begin(115200);
-  while (Esp->isValid() == false)
+  while (Communication->isValid() == false)
   {
     delay(1000);
     blink(3);
-    Serial.println("No Esp");
+    Serial.println("No Communication");
   }}
 
   
-  Esp->setupAP();
+  Communication->setupAP();
   blink(2);
-  while( !Esp->isConnected() )
+  while( !Communication->isConnected() )
   {
     delay(100);
   }
   blink(3);
   ////// ESP Init
 
-  
+  Imu->calibrate();
   Navigation->begin(Imu);
   safe_mode();
 
@@ -128,7 +128,7 @@ void process_command()
 {
   /////////////////////////////////////////////////////Process Command
 // Check if a new commando has been received....
-if ( Esp->getCommand(Command))
+if ( Communication->getCommand(Command))
   {
     time_wo_command = 0;
     PORTB &= ~(1<<PB5);
@@ -177,7 +177,7 @@ void safe_mode()
 
         while(!start_cmd_received)
           {
-            Esp->getCommand(Command);
+            Communication->getCommand(Command);
             if (Command->T <= -100 && Command->r >= 100)     // left TRIGGER + right DOWN
             start_cmd_received = true;
 

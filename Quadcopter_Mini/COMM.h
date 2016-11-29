@@ -25,6 +25,16 @@ struct tCommand
     int8_t T;
 };
 
+
+class cCommunicationInterface
+{
+public:
+    virtual void begin() = 0;
+    virtual bool getCommand(tCommand *Command) = 0;
+};
+
+
+
 class cSerial
 {
 public:
@@ -39,10 +49,13 @@ public:
 };
 
 
- class cESP
+ class cESP: public cCommunicationInterface
  {
   public:
-  void begin(long baud=115200);
+  void begin();
+  bool getCommand(tCommand *Command);
+
+  void setBaud(long _baud=115200);
   bool isValid();
   void createAP();
   void setupAP();
@@ -52,10 +65,10 @@ public:
   void flushBuffer();
   uint32_t getData(char *buffer);
   uint32_t getPayload(char *buffer);
-  bool getCommand(tCommand *Command);
    
    
-   
+  protected:
+  long baud;
    
    
  };
@@ -63,6 +76,13 @@ public:
 
 
 
+ class cCustomCOM: public cCommunicationInterface
+ {
+     void begin();
+     bool getCommand(tCommand *Command);
+
+
+ };
 
 
 
