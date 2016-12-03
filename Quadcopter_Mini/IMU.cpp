@@ -45,6 +45,21 @@ void cImuInterface::calibrate()
 
 }
 
+void cImuInterface::checkIfValid()
+{
+    delay(50);
+    if (isValid() == false)
+    {
+        Serial.begin(115200);
+        while (isValid() == false)
+        {
+          delay(1000);
+          blink(3);
+          Serial.println("No Imu");
+        }
+    }
+}
+
 void cMPU6050::begin()
 {
     Wire.begin();

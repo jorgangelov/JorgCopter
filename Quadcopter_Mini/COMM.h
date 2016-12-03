@@ -52,6 +52,7 @@ public:
  class cESP: public cCommunicationInterface
  {
   public:
+     cESP(): baud(115200){}
   void begin();
   bool getCommand(tCommand *Command);
 

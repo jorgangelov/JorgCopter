@@ -31,48 +31,16 @@ void setup()
 
   ////// IMU Init
   Imu->begin();
-  delay(50);
-  if (Imu->isValid() == false){
-  Serial.begin(115200);
-  while (Imu->isValid() == false)
-  {
-    delay(1000);
-    blink(3);
-    Serial.println("No Imu");
-  }}
+  Imu->checkIfValid();
   ////// IMU Init
 
-  ////// ESP Init
-  Communication->setBaud();
+  ////// COMMUNICATION Init
   Communication->begin();
-  delay(50);
-  if (Communication->isValid() == false){
-   Serial.begin(115200);
-  while (Communication->isValid() == false)
-  {
-    delay(1000);
-    blink(3);
-    Serial.println("No Communication");
-  }}
-
-  
-  Communication->setupAP();
-  blink(2);
-  while( !Communication->isConnected() )
-  {
-    delay(100);
-  }
-  blink(3);
-  ////// ESP Init
+  ////// COMMUNICATION Init
 
   Imu->calibrate();
   Navigation->begin(Imu);
   safe_mode();
-
-  
-
-
-
 }
 
 

@@ -104,6 +104,27 @@ void cESP::begin()
   */
 
 
+  delay(50);
+  if (isValid() == false)
+  {
+      Serial.begin(115200);
+      while (isValid() == false)
+      {
+        delay(1000);
+        blink(3);
+        Serial.println("No Communication");
+      }
+  }
+
+
+  setupAP();
+  blink(2);
+  while( !isConnected() )
+  {
+    delay(100);
+  }
+  blink(3);
+
 
 
 }
