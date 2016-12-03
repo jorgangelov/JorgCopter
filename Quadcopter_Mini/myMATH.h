@@ -51,30 +51,25 @@ cQuaternion operator*(float f, cQuaternion q);
 
 
 
-class cPT1Filter
+class cDigitalFilter
 {
   public:
-  cPT1Filter(float _T_f)
+  cDigitalFilter(float _T_f)
   {
     T_f = _T_f;
-    y_ = 0;
-    ydot_ = 0;
-    u_ = 0;
+    upt1_k = 0;
+    udt1_k = 0;
+    uI_k = 0;
+    u_k = 0;
   }
-  void update(float _u_k, float _T_s);
-  float y()
-  {
-    return y_;
-  }
-  
-  float ydot()
-  {
-    return ydot_;
-  }
+  void updateEF(float _u_k, float _T_s);
 
-  private:
-  float T_f, T_s, y_, ydot_,u_;
-  
+
+  float T_f;
+  float upt1_k, udt1_k, uI_k, u_k;
+  float udot_kme, upt1_kme, udt1_kme, uI_kme, u_kme;
+
+
 };
 
 // Definitions
@@ -207,12 +202,41 @@ inline cQuaternion operator*(float f, cQuaternion q)
 }
 
 
-inline void cPT1Filter::update(float _u_k, float _T_s)
+inline void cDigitalFilter::updateEF(float _u_k, float _T_s)
 {
-  ydot_ = (1/T_f) * (u_ - y_);
-  y_ = y_  + _T_s * ydot_;
-  u_ = _u_k; 
+    u_kme = u_k;
+    uI_kme = uI_k;
+    upt1_kme = upt1_k;
+    udt1_kme = udt1_k;
+
+    u_k = _u_k;
+    udot_kme = (1/_T_s) * (u_k - u_kme);
+
+
+    upt1_k = upt1_kme + (_T_s/T_f)*(u_kme - upt1_kme);
+    udt1_k = (1/T_f)*(u_k - u_kme) + udt1_kme*(1-(_T_s/T_f));
+    uI_k = uI_kme + _T_s*u_kme;
+
+
 }
 
 
+namespace aux
+{
+
+template <class T> inline T reverseBytes(T var)
+{
+    T reversed;
+    uint8_t size = sizeof(T);
+    uint8_t *ptT = (uint8_t*)&var;
+    uint8_t *ptReversed = (uint8_t*)&reversed;
+    for (int i=0; i<size; i++)
+    {
+        ptReversed[i] = ptT[size-1-i];
+    }
+
+
+    return reversed;
+}
+}
 #endif
