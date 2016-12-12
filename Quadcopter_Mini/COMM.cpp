@@ -363,3 +363,21 @@ void fastblink(int n)
     delay(100);
   }
 }
+
+void cCustomCOM::begin()
+{
+
+}
+
+bool cCustomCOM::getCommand(tCommand *Command)
+{
+    bool return_bool = false;
+    Command->q_BI_x = 0;
+    Command->q_BI_y = 0;
+    Command->r = 0;
+    Command->T = 0;
+
+
+
+    return return_bool;
+}
