@@ -18,6 +18,7 @@ public:
   cVector<dim> operator+(cVector<dim> _other);
   cVector<dim> operator*(float _f);
   float entries[dim];
+  float norm();
 
 };
 
@@ -65,29 +66,31 @@ class cDigitalFilter
   void update(float _u_k, float _T_s);
 
 
+  float upt1_k, udt1_k, uI_k;
+
+  protected:
+  float udot_kme, upt1_kme, udt1_kme, uI_kme, u_kme, u_k;
   float T_f;
-  float upt1_k, udt1_k, uI_k, u_k;
-  float udot_kme, upt1_kme, udt1_kme, uI_kme, u_kme;
 
 
 };
 
-template <class T> class cRollingBuffer
+template <class T> class cRingBuffer
 {
 public:
-    cRollingBuffer(int _length)
+    cRingBuffer(int _length)
     {
         length = _length;
         currentIndex = 0;
         buffer = new T[length];
         memset(buffer,0,sizeof(buffer)*_length);
     }
-    ~cRollingBuffer(){delete buffer;}
+    ~cRingBuffer(){delete buffer;}
     void attach(T value);
     T first();
     T last();
     T& operator[](int i);
-
+	int size();
 protected:
     T *buffer;
     int length;
@@ -106,7 +109,7 @@ public:
     float u_FIR_k;
 protected:
     int order;
-    cRollingBuffer<float> values;
+    cRingBuffer<float> values;
     float u_FIR_kme;
 
 };
@@ -166,7 +169,15 @@ template <uint8_t dim> inline cVector<dim> operator-(cVector<dim> v1, cVector<di
     return v1 + (-1)*v2;
 }
 
-
+template <uint8_t dim> inline float cVector<dim>::norm()
+{
+  float mynorm = 0;
+  for (uint8_t i=0; i<dim; i++)
+  {
+    mynorm += entries[i]*entries[i];
+  }
+  return sqrt(mynorm);
+}
 
 
 inline cQuaternion cQuaternion::operator+(cQuaternion Q)
@@ -269,27 +280,31 @@ inline void cFIRFilter::update(float u_k)
     u_FIR_kme = u_FIR_k;
 }
 
-template <class T> inline void cRollingBuffer<T>::attach(T value)
+template <class T> inline void cRingBuffer<T>::attach(T value)
 {
     currentIndex = (currentIndex+1)%length;
     buffer[currentIndex] = value;
 }
 
-template <class T> inline T cRollingBuffer<T>::first()
+template <class T> inline T cRingBuffer<T>::first()
 {
     return buffer[currentIndex];
 }
 
-template <class T> inline T cRollingBuffer<T>::last()
+template <class T> inline T cRingBuffer<T>::last()
 {
     return buffer[(currentIndex+1)%length];
 }
-template <class T> inline T& cRollingBuffer<T>::operator [](int i)
+template <class T> inline T& cRingBuffer<T>::operator [](int i)
 {
     i = i%length;
     return buffer[(currentIndex+length-i)%length];
 }
 
+template <class T> inline int cRingBuffer<T>::size()
+{
+	return length;
+}
 
 
 namespace aux
