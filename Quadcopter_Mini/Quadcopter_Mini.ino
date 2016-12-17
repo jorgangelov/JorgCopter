@@ -7,9 +7,9 @@ int operation_mode = 1;
 
 cSerial *Uart;
 cNavigation *Navigation;
-cMPU6050 *Imu;
+cImuInterface *Imu;
 cController *Controller;
-cESP *Communication;
+cCommunicationInterface *Communication;
 tCommand *Command;
 
 
