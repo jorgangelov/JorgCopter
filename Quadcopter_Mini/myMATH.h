@@ -6,27 +6,30 @@
 #include <math.h>
 
 // Declarations
-template <uint8_t dim> class cVector
+
+
+//////////////////////////////////////////////// MATRIX
+template <uint8_t n, uint8_t m> class cMatrix
 {
 public:
-  cVector()
-  {
-    memset(entries,0,sizeof(entries));
-  }
+    cMatrix()
+    {
+        memset(entries,0,sizeof(entries));
+    }
 
-  float& operator()(uint8_t _i);
-  cVector<dim> operator+(cVector<dim> _other);
-  cVector<dim> operator*(float _f);
-  float entries[dim];
-  float norm();
+
+    float& operator()(int i, int j);
+    cMatrix<m,n> T();
+    float norm();
+
+protected:
+    float entries[n][m];
 
 };
-
-template <uint8_t dim> cVector<dim> operator*(float _f,cVector<dim> _vector);
-template <uint8_t dim> float operator*(cVector<dim> v1, cVector<dim> v2);
-template <uint8_t dim> cVector<dim> operator-(cVector<dim> v1, cVector<dim> v2);
+//////////////////////////////////////////////// MATRIX
 
 
+//////////////////////////////////////////////// QUATERNION
 class cQuaternion
 {
 public:
@@ -49,9 +52,10 @@ public:
 
 cQuaternion operator-(cQuaternion q1, cQuaternion q2);
 cQuaternion operator*(float f, cQuaternion q);
+//////////////////////////////////////////////// QUATERNION
 
 
-
+//////////////////////////////////////////////// FILTERS
 class cDigitalFilter
 {
   public:
@@ -109,77 +113,124 @@ public:
     float u_FIR_k;
 protected:
     int order;
-    cRingBuffer<float> values;
     float u_FIR_kme;
+    cRingBuffer<float> values;
 
 };
+//////////////////////////////////////////////// FILTERS
 
 
 //////////////////////////////////////////////////////////////////////////Definitions
 ///
-template <uint8_t dim> inline float& cVector<dim>::operator()(uint8_t _i)
-{
-  return entries[_i-1];
-}
 
-template <uint8_t dim> inline cVector<dim> cVector<dim>::operator+(cVector<dim> _other)
+//////////////////////////////////////////////// MATRIX
+template <uint8_t n, uint8_t m> inline float& cMatrix<n,m>::operator ()(int i, int j)
 {
-  cVector<dim> temp;
-  for(int i=0; i<dim; i++)
-  {
-    temp.entries[i] = entries[i] + _other.entries[i];
-  }
-
-  return temp;
-}
-
-template <uint8_t dim> inline cVector<dim> cVector<dim>::operator*(float _f)
-{
-  cVector<dim> temp;
-  for (int i=0; i<dim; i++)
-  {
-    temp.entries[i] = entries[i] * _f;
-  }
-  return temp;
-}
-
-template <uint8_t dim> inline cVector<dim> operator*(float _f, cVector<dim> _vector)
-{
-  cVector<dim> temp;
-  for (int i=0; i<dim; i++)
-  {
-    temp(i+1) = _vector.entries[i] * _f;
-  }
-  return temp;
+    return entries[i-1][j-1];
 }
 
 
-template <uint8_t dim> inline float operator*(cVector<dim> v1, cVector<dim> v2)
+
+template <uint8_t n, uint8_t m, uint8_t l> inline cMatrix<n,m> operator*(cMatrix<n,l> left, cMatrix<l,m> right)
 {
-    float scalar = 0;
-    for (int i=0; i<dim; i++)
+    cMatrix<n,m> result;
+    for (int i=0; i<n; i++)
     {
-        scalar += v1.entries[i]*v2.entries[i];
+        for (int j=0; j<m; j++)
+        {
+            float entry = 0;
+            for (int k=0; k<l; k++)
+            {
+                entry += left(i+1,k+1)*right(k+1,j+1);
+            }
+            result(i+1,j+1) = entry;
+        }
     }
-    return scalar;
+
+
+    return result;
 }
 
-template <uint8_t dim> inline cVector<dim> operator-(cVector<dim> v1, cVector<dim> v2)
+template <uint8_t n, uint8_t m> inline cMatrix<n,m> operator+(cMatrix<n,m> left, cMatrix<n,m> right)
 {
-    return v1 + (-1)*v2;
+    cMatrix<n,m> result;
+    for (int i=0; i<n; i++)
+    {
+        for (int j=0; j<m; j++)
+        {
+            result(i+1,j+1) = left(i+1,j+1) + right(i+1,j+1);
+        }
+    }
+
+    return result;
 }
 
-template <uint8_t dim> inline float cVector<dim>::norm()
+template <uint8_t n, uint8_t m> inline cMatrix<n,m> operator*(cMatrix<n,m> left, float number)
 {
-  float mynorm = 0;
-  for (uint8_t i=0; i<dim; i++)
-  {
-    mynorm += entries[i]*entries[i];
-  }
-  return sqrt(mynorm);
+    cMatrix<n,m> result;
+    for (int i=0; i<n; i++)
+    {
+        for (int j=0; j<m; j++)
+        {
+            result(i+1,j+1) = left(i+1,j+1)*number;
+        }
+    }
+
+    return result;
+}
+
+template <uint8_t n, uint8_t m> inline cMatrix<n,m> operator*(float number, cMatrix<n,m> right)
+{
+    cMatrix<n,m> result;
+    for (int i=0; i<n; i++)
+    {
+        for (int j=0; j<m; j++)
+        {
+            result(i+1,j+1) = number*right(i+1,j+1);
+        }
+    }
+
+    return result;
 }
 
 
+template <uint8_t n, uint8_t m> inline cMatrix<n,m> operator-(cMatrix<n,m> left, cMatrix<n,m> right)
+{
+    return left+(-1)*right;
+}
+
+template <uint8_t n, uint8_t m> inline cMatrix<m,n> cMatrix<n,m>::T()
+{
+    cMatrix<m,n> result;
+    for (int i=0; i<n; i++)
+    {
+        for (int j=0; j<m; j++)
+        {
+            result(j+1,i+1) = (*this)(i+1,j+1);
+        }
+    }
+
+    return result;
+}
+
+template <uint8_t n, uint8_t m> inline float cMatrix<n,m>::norm()
+{
+    float result = 0;
+    for (int i=0; i<n; i++)
+    {
+        for (int j=0; j<m; j++)
+        {
+            result += entries[i][j]*entries[i][j];
+        }
+    }
+
+    return sqrt(result);
+}
+
+//////////////////////////////////////////////// MATRIX
+
+
+//////////////////////////////////////////////// QUATERNION
 inline cQuaternion cQuaternion::operator+(cQuaternion Q)
 {
     cQuaternion Q_return;
@@ -252,8 +303,9 @@ inline cQuaternion operator*(float f, cQuaternion q)
 {
     return q*f;
 }
+//////////////////////////////////////////////// QUATERNION
 
-
+//////////////////////////////////////////////// FILTERS
 inline void cDigitalFilter::update(float _u_k, float _T_s)
 {
     u_kme = u_k;
@@ -305,10 +357,13 @@ template <class T> inline int cRingBuffer<T>::size()
 {
 	return length;
 }
+//////////////////////////////////////////////// FILTERS
 
 
-namespace aux
-{
+
+
+
+
 
     template <class T> inline T reverseBytes(T var)
     {
@@ -324,5 +379,5 @@ namespace aux
 
         return reversed;
     }
-}
+
 #endif
