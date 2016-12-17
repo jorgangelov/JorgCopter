@@ -62,7 +62,7 @@ class cDigitalFilter
     uI_k = 0;
     u_k = 0;
   }
-  void updateEF(float _u_k, float _T_s);
+  void update(float _u_k, float _T_s);
 
 
   float T_f;
@@ -72,7 +72,48 @@ class cDigitalFilter
 
 };
 
-// Definitions
+template <class T> class cRollingBuffer
+{
+public:
+    cRollingBuffer(int _length)
+    {
+        length = _length;
+        currentIndex = 0;
+        buffer = new T[length];
+        memset(buffer,0,sizeof(buffer)*_length);
+    }
+    ~cRollingBuffer(){delete buffer;}
+    void attach(T value);
+    T first();
+    T last();
+    T& operator[](int i);
+
+protected:
+    T *buffer;
+    int length;
+    int currentIndex;
+};
+
+class cFIRFilter
+{
+public:
+    cFIRFilter(int _order): order(_order),u_FIR_kme(0),values(_order)
+    {
+
+    }
+
+    void update(float u_k);
+    float u_FIR_k;
+protected:
+    int order;
+    cRollingBuffer<float> values;
+    float u_FIR_kme;
+
+};
+
+
+//////////////////////////////////////////////////////////////////////////Definitions
+///
 template <uint8_t dim> inline float& cVector<dim>::operator()(uint8_t _i)
 {
   return entries[_i-1];
@@ -202,7 +243,7 @@ inline cQuaternion operator*(float f, cQuaternion q)
 }
 
 
-inline void cDigitalFilter::updateEF(float _u_k, float _T_s)
+inline void cDigitalFilter::update(float _u_k, float _T_s)
 {
     u_kme = u_k;
     uI_kme = uI_k;
@@ -220,23 +261,53 @@ inline void cDigitalFilter::updateEF(float _u_k, float _T_s)
 
 }
 
+inline void cFIRFilter::update(float u_k)
+{
+	float last = values.last();
+    values.attach(u_k);
+    u_FIR_k = u_FIR_kme + (values.first() - last)/(order);
+    u_FIR_kme = u_FIR_k;
+}
+
+template <class T> inline void cRollingBuffer<T>::attach(T value)
+{
+    currentIndex = (currentIndex+1)%length;
+    buffer[currentIndex] = value;
+}
+
+template <class T> inline T cRollingBuffer<T>::first()
+{
+    return buffer[currentIndex];
+}
+
+template <class T> inline T cRollingBuffer<T>::last()
+{
+    return buffer[(currentIndex+1)%length];
+}
+template <class T> inline T& cRollingBuffer<T>::operator [](int i)
+{
+    i = i%length;
+    return buffer[(currentIndex+length-i)%length];
+}
+
+
 
 namespace aux
 {
 
-template <class T> inline T reverseBytes(T var)
-{
-    T reversed;
-    uint8_t size = sizeof(T);
-    uint8_t *ptT = (uint8_t*)&var;
-    uint8_t *ptReversed = (uint8_t*)&reversed;
-    for (int i=0; i<size; i++)
+    template <class T> inline T reverseBytes(T var)
     {
-        ptReversed[i] = ptT[size-1-i];
+        T reversed;
+        uint8_t size = sizeof(T);
+        uint8_t *ptT = (uint8_t*)&var;
+        uint8_t *ptReversed = (uint8_t*)&reversed;
+        for (int i=0; i<size; i++)
+        {
+            ptReversed[i] = ptT[size-1-i];
+        }
+
+
+        return reversed;
     }
-
-
-    return reversed;
-}
 }
 #endif
