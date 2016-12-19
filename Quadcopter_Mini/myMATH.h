@@ -50,8 +50,7 @@ public:
     float values[4];
 };
 
-cQuaternion operator-(cQuaternion q1, cQuaternion q2);
-cQuaternion operator*(float f, cQuaternion q);
+
 //////////////////////////////////////////////// QUATERNION
 
 
@@ -94,7 +93,7 @@ public:
     T first();
     T last();
     T& operator[](int i);
-	int size();
+    int size();
 protected:
     T *buffer;
     int length;
@@ -104,9 +103,10 @@ protected:
 class cFIRFilter
 {
 public:
-    cFIRFilter(int _order): order(_order),u_FIR_kme(0),values(_order)
+    cFIRFilter(int _order):values(_order)
     {
-
+        order = _order;
+        u_FIR_kme = 0;
     }
 
     void update(float u_k);
@@ -128,8 +128,6 @@ template <uint8_t n, uint8_t m> inline float& cMatrix<n,m>::operator ()(int i, i
 {
     return entries[i-1][j-1];
 }
-
-
 
 template <uint8_t n, uint8_t m, uint8_t l> inline cMatrix<n,m> operator*(cMatrix<n,l> left, cMatrix<l,m> right)
 {
@@ -193,7 +191,6 @@ template <uint8_t n, uint8_t m> inline cMatrix<n,m> operator*(float number, cMat
     return result;
 }
 
-
 template <uint8_t n, uint8_t m> inline cMatrix<n,m> operator-(cMatrix<n,m> left, cMatrix<n,m> right)
 {
     return left+(-1)*right;
@@ -241,8 +238,6 @@ inline cQuaternion cQuaternion::operator+(cQuaternion Q)
     return Q_return;
 }
 
-
-
 inline cQuaternion cQuaternion::operator*(cQuaternion Q)
 {
     cQuaternion Q_return;
@@ -252,7 +247,6 @@ inline cQuaternion cQuaternion::operator*(cQuaternion Q)
     Q_return.values[3] = this->values[3]*Q.values[0] - this->values[2]*Q.values[1] + this->values[1]*Q.values[2] + this->values[0]*Q.values[3];
     return Q_return;
 }
-
 
 inline cQuaternion cQuaternion::operator*(float f)
 {
@@ -265,13 +259,10 @@ inline cQuaternion cQuaternion::operator*(float f)
     return Q_return;
 }
 
-
 inline float& cQuaternion::operator()(int i)
 {
     return this->values[i-1];
 }
-
-
 
 inline void cQuaternion::norm()
 {
@@ -282,8 +273,6 @@ inline void cQuaternion::norm()
     this->values[3] /= betrag;
 }
 
-
-
 inline cQuaternion cQuaternion::conjugated()
 {
     cQuaternion tmp_q = *this;
@@ -292,7 +281,6 @@ inline cQuaternion cQuaternion::conjugated()
     tmp_q.values[3] = -tmp_q.values[3];
     return tmp_q;
 }
-
 
 inline cQuaternion operator-(cQuaternion q1, cQuaternion q2)
 {
@@ -347,6 +335,7 @@ template <class T> inline T cRingBuffer<T>::last()
 {
     return buffer[(currentIndex+1)%length];
 }
+
 template <class T> inline T& cRingBuffer<T>::operator [](int i)
 {
     i = i%length;
@@ -361,12 +350,8 @@ template <class T> inline int cRingBuffer<T>::size()
 
 
 
-
-
-
-
-    template <class T> inline T reverseBytes(T var)
-    {
+template <class T> inline T reverseBytes(T var)
+{
         T reversed;
         uint8_t size = sizeof(T);
         uint8_t *ptT = (uint8_t*)&var;
@@ -378,6 +363,69 @@ template <class T> inline int cRingBuffer<T>::size()
 
 
         return reversed;
+}
+
+
+template <uint8_t n> inline cMatrix<n,1> solveLES(cMatrix<n,n> A, cMatrix<n,1> b)
+{
+    cMatrix<n,1> x;
+    // Gauss Elimination
+    for (int i=0; i<n-1; i++) // For every line, transform the lines below
+    {
+        // Pivoting: Swap current line with that line with greatest (norm) value at pivot position
+            int max_line = i; // default = current line
+            float max_value = A(i+1,i+1)*A(i+1,i+1); // default = current value
+            for (int m=i+1; m<n; m++) // Check remaining lines for largest Pivot element
+            {
+                if ( A(m+1,i+1)*A(m+1,i+1) >= max_value) // line m has larger Pivot element
+                {
+                    max_value = A(m+1,i+1)*A(m+1,i+1);
+                    max_line = m;
+                }
+            }
+            // Swap i-th line with m-th line
+            // Swapping lines in b
+            float b_line_i = b(i+1,1);
+            b(i+1,1) = b(max_line+1,1);
+            b(max_line+1,1) = b_line_i;
+            // Swapping lines in A
+            float A_line_i_k;
+            for (int k=0; k<n; k++)
+            {
+                A_line_i_k = A(i+1,k+1);
+                A(i+1,k+1) = A(max_line+1,k+1);
+                A(max_line+1,k+1) = A_line_i_k;
+            }
+
+
+
+        // Start transforming underlying lines...
+        for (int j=i+1; j<n; j++) // for every line below the pivot line...
+        {
+            float factor = A(j+1,i+1)/A(i+1,i+1); // calculate pivot factor
+            // Line Operation
+            for (int k=0; k<n; k++) // substract pivotline*factor from that line
+            {
+                A(j+1,k+1) = A(j+1,k+1) - factor*A(i+1,k+1);
+            }
+            b(j+1,1) = b(j+1,1) - factor*b(i+1,1); // also from b vector
+
+        }
     }
+    // System should now be at upper triangular form...
+
+    // Back Substitution
+    for (int i=0; i<n; i++)
+    {
+        x(n-i,1) = b(n-i,1);
+        for (int j=0; j<i; j++)
+        {
+            x(n-i,1) = x(n-i,1) - A(n-i,n-j)*x(n-j,1);
+        }
+        x(n-i,1) = x(n-i,1)/A(n-i,n-i);
+    }
+
+    return x;
+}
 
 #endif
