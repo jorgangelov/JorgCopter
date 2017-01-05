@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "Wire.h"
+#include "COMM.h"
 
 struct tSensor
 {
@@ -30,8 +31,10 @@ class cImuInterface
 public:
     virtual void begin() = 0;
     virtual void getData() = 0;
+
     bool isValid();
     void calibrate();
+    void checkIfValid();
 
     tSensor data();
 

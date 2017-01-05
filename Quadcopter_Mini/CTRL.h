@@ -7,7 +7,7 @@
 #include "Navigation.h"
 #include "COMM.h"
 
-#define QUADCONFIGURATION 1 // 0 = "+"      1 = "x"
+#define QUADCONFIGURATION 1 // 0 = "+"      // 1 = "x"
 #define MOTORPIN1 5         // Front (P)    // Front-Left (P)
 #define MOTORPIN2 6         // Right (N)    // Front-Right (N)
 #define MOTORPIN3 10        // Rear (P)     // Rear-Right (P)

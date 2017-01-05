@@ -45,6 +45,21 @@ void cImuInterface::calibrate()
 
 }
 
+void cImuInterface::checkIfValid()
+{
+    delay(50);
+    if (isValid() == false)
+    {
+        Serial.begin(115200);
+        while (isValid() == false)
+        {
+          delay(1000);
+          blink(3);
+          Serial.println("No Imu");
+        }
+    }
+}
+
 void cMPU6050::begin()
 {
     Wire.begin();
@@ -115,5 +130,21 @@ void cCustomIMU::begin()
 
 void cCustomIMU::getData()
 {
+    float ax,ay,az,wx,wy,wz,temp;
+    // Auslesen
 
+
+    // Auslesen
+    Sensordata_.ax = ax;
+    Sensordata_.ay = ay;
+    Sensordata_.az = az;
+    Sensordata_.temp = temp;
+
+
+    Sensordata_.wx = wx;
+    Sensordata_.wy = wy;
+    Sensordata_.wz = wz;
+    Sensordata_.wx -= Sensordata_.bias_wx;
+    Sensordata_.wy -= Sensordata_.bias_wy;
+    Sensordata_.wz -= Sensordata_.bias_wz;
 }

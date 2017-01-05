@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include "IMU.h"
 #include "myMATH.h"
-#define TRANSFORMATION false
 
 void blink(int n);
 

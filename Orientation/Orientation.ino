@@ -7,7 +7,7 @@ const float dt_ms = 100;
 
 
 cSerial *Uart;
-cMPU6050 *Imu;
+cImuInterface *Imu;
 cNavigation *Navigation;
 
 
@@ -23,17 +23,8 @@ void setup()
   
   Uart->begin(115200);
   Imu->begin();
+  Imu->checkIfValid();
 
-
-  delay(50);
-  if (Imu->isValid() == false){
-  Serial.begin(115200);
-  while (Imu->isValid() == false)
-  {
-    delay(1000);
-    blink(3);
-    Serial.println("No Imu");
-  }}
   
     //TCCR1A = 0;        
     TCCR2B = 0;
