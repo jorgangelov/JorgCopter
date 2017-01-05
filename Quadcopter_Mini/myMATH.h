@@ -18,6 +18,7 @@ public:
   cVector<dim> operator+(cVector<dim> _other);
   cVector<dim> operator*(float _f);
   float entries[dim];
+  float norm();
 
 };
 
@@ -49,7 +50,73 @@ public:
 cQuaternion operator-(cQuaternion q1, cQuaternion q2);
 cQuaternion operator*(float f, cQuaternion q);
 
-// Definitions
+
+
+class cDigitalFilter
+{
+  public:
+  cDigitalFilter(float _T_f)
+  {
+    T_f = _T_f;
+    upt1_k = 0;
+    udt1_k = 0;
+    uI_k = 0;
+    u_k = 0;
+  }
+  void update(float _u_k, float _T_s);
+
+
+  float upt1_k, udt1_k, uI_k;
+
+  protected:
+  float udot_kme, upt1_kme, udt1_kme, uI_kme, u_kme, u_k;
+  float T_f;
+
+
+};
+
+template <class T> class cRingBuffer
+{
+public:
+    cRingBuffer(int _length)
+    {
+        length = _length;
+        currentIndex = 0;
+        buffer = new T[length];
+        memset(buffer,0,sizeof(buffer)*_length);
+    }
+    ~cRingBuffer(){delete buffer;}
+    void attach(T value);
+    T first();
+    T last();
+    T& operator[](int i);
+	int size();
+protected:
+    T *buffer;
+    int length;
+    int currentIndex;
+};
+
+class cFIRFilter
+{
+public:
+    cFIRFilter(int _order): order(_order),u_FIR_kme(0),values(_order)
+    {
+
+    }
+
+    void update(float u_k);
+    float u_FIR_k;
+protected:
+    int order;
+    cRingBuffer<float> values;
+    float u_FIR_kme;
+
+};
+
+
+//////////////////////////////////////////////////////////////////////////Definitions
+///
 template <uint8_t dim> inline float& cVector<dim>::operator()(uint8_t _i)
 {
   return entries[_i-1];
@@ -102,7 +169,15 @@ template <uint8_t dim> inline cVector<dim> operator-(cVector<dim> v1, cVector<di
     return v1 + (-1)*v2;
 }
 
-
+template <uint8_t dim> inline float cVector<dim>::norm()
+{
+  float mynorm = 0;
+  for (uint8_t i=0; i<dim; i++)
+  {
+    mynorm += entries[i]*entries[i];
+  }
+  return sqrt(mynorm);
+}
 
 
 inline cQuaternion cQuaternion::operator+(cQuaternion Q)
@@ -179,4 +254,75 @@ inline cQuaternion operator*(float f, cQuaternion q)
 }
 
 
+inline void cDigitalFilter::update(float _u_k, float _T_s)
+{
+    u_kme = u_k;
+    uI_kme = uI_k;
+    upt1_kme = upt1_k;
+    udt1_kme = udt1_k;
+
+    u_k = _u_k;
+    udot_kme = (1/_T_s) * (u_k - u_kme);
+
+
+    upt1_k = upt1_kme + (_T_s/T_f)*(u_kme - upt1_kme);
+    udt1_k = (1/T_f)*(u_k - u_kme) + udt1_kme*(1-(_T_s/T_f));
+    uI_k = uI_kme + _T_s*u_kme;
+
+
+}
+
+inline void cFIRFilter::update(float u_k)
+{
+	float last = values.last();
+    values.attach(u_k);
+    u_FIR_k = u_FIR_kme + (values.first() - last)/(order);
+    u_FIR_kme = u_FIR_k;
+}
+
+template <class T> inline void cRingBuffer<T>::attach(T value)
+{
+    currentIndex = (currentIndex+1)%length;
+    buffer[currentIndex] = value;
+}
+
+template <class T> inline T cRingBuffer<T>::first()
+{
+    return buffer[currentIndex];
+}
+
+template <class T> inline T cRingBuffer<T>::last()
+{
+    return buffer[(currentIndex+1)%length];
+}
+template <class T> inline T& cRingBuffer<T>::operator [](int i)
+{
+    i = i%length;
+    return buffer[(currentIndex+length-i)%length];
+}
+
+template <class T> inline int cRingBuffer<T>::size()
+{
+	return length;
+}
+
+
+namespace aux
+{
+
+    template <class T> inline T reverseBytes(T var)
+    {
+        T reversed;
+        uint8_t size = sizeof(T);
+        uint8_t *ptT = (uint8_t*)&var;
+        uint8_t *ptReversed = (uint8_t*)&reversed;
+        for (int i=0; i<size; i++)
+        {
+            ptReversed[i] = ptT[size-1-i];
+        }
+
+
+        return reversed;
+    }
+}
 #endif
