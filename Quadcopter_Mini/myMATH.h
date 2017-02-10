@@ -6,8 +6,7 @@
 #include <math.h>
 
 // Declarations
-
-
+namespace jorg{
 //////////////////////////////////////////////// MATRIX
 template <uint8_t n, uint8_t m> class cMatrix
 {
@@ -69,10 +68,10 @@ class cDigitalFilter
   void update(float _u_k, float _T_s);
 
 
-  float upt1_k, udt1_k, uI_k;
+  float upt1_k, udt1_k, uI_k, udot_kme;
 
   protected:
-  float udot_kme, upt1_kme, udt1_kme, uI_kme, u_kme, u_k;
+  float upt1_kme, udt1_kme, uI_kme, u_kme, u_k;
   float T_f;
 
 
@@ -118,6 +117,44 @@ protected:
 
 };
 //////////////////////////////////////////////// FILTERS
+
+class cOptimization
+{
+public:
+cOptimization(float (*costFctPt_)(float* argArray), int argNr_)
+{
+    costFctPt = costFctPt_;
+    argNr = argNr_;
+    Result.optimalArg = new float[argNr];
+    perturbationNr = 1e-3;
+    initialGain = -2;
+    innerLoopMax = 30;
+}
+~cOptimization()
+{
+    delete Result.optimalArg;
+}
+    struct
+    {
+        float optimalCost;
+        float *optimalArg;
+        int outerLoopCount;
+    } Result;
+
+    void startOptimization(float *initialInput_ = 0, int maxSteps_ = 100, float threshold_ = 1e-4);
+
+
+private:
+float (*costFctPt)(float* argArray);
+int argNr;
+float perturbationNr;
+float initialGain;
+int innerLoopMax;
+
+};
+
+
+
 
 
 //////////////////////////////////////////////////////////////////////////Definitions
@@ -427,5 +464,109 @@ template <uint8_t n> inline cMatrix<n,1> solveLES(cMatrix<n,n> A, cMatrix<n,1> b
 
     return x;
 }
+
+////////////////////////////////// Optimization
+inline void cOptimization::startOptimization(float *initialInput_, int maxSteps_, float threshold_)
+{
+    int i=0;
+
+    ////////////////////////////////// Initial Argument
+    float currentArg[argNr];
+    if (initialInput_ == 0)
+    {
+        for (int j=0; j<argNr; j++) // init to 0
+        {
+            currentArg[j] = 0;
+        }
+    }
+    else
+    {
+        for (int j=0; j<argNr; j++) // init to initial Input
+        {
+            currentArg[j] = initialInput_[j];
+        }
+    }
+    ////////////////////////////////// Initial Argument
+
+    ////////////////////////////////// Outer Loop
+    while (i<maxSteps_)
+    {
+        float currentCost = costFctPt(currentArg); // current cost
+
+     ////////////////////////////////// Gradient
+        float gradient[argNr];
+        float gainNorm = 0;
+        // Generate gradient
+        for (int input_i=0; input_i<argNr; input_i++) // For every Input
+        {
+            float perturbedInput[argNr];
+            for (int perturbed_i=0; perturbed_i<argNr; perturbed_i++) // generate perturbed Input
+            {
+                perturbedInput[perturbed_i] = currentArg[perturbed_i];
+                if (perturbed_i == input_i) perturbedInput[perturbed_i] += perturbationNr;
+            }
+            float perturbedCost = costFctPt(perturbedInput);
+            gradient[input_i] = (1/perturbationNr)*(perturbedCost-currentCost);
+            gainNorm += gradient[input_i]*gradient[input_i];
+        }
+     ////////////////////////////////// Gradient
+
+     ////////////////////////////////// Backtracking Linesearch
+        int backtracking_i = 0;
+        float gain = initialGain;
+
+        while (backtracking_i<innerLoopMax)
+        {
+            float inputCandidate[argNr];
+            for (int input_i=0; input_i<argNr; input_i++) // Calculate Step
+            {
+                inputCandidate[input_i] = currentArg[input_i] + gain*gradient[input_i];
+            }
+            float costCandidate = costFctPt(inputCandidate);
+
+            // Test Armijo Condition
+            if (costCandidate <= currentCost + 0.5*gain*gainNorm)
+            {
+                for (int input_i=0; input_i<argNr; input_i++) // Update
+                {
+                    currentArg[input_i] = inputCandidate[input_i];
+                }
+                break;
+            }
+            else
+            {
+                gain *= 0.1;
+            }
+
+            backtracking_i++;
+        }
+     ////////////////////////////////// Backtracking Linesearch
+
+
+
+        if (gainNorm <= threshold_) break;
+
+
+        i++;
+    }
+    ////////////////////////////////// Outer Loop
+
+
+    Result.optimalCost = costFctPt(currentArg);
+    for (int input_i=0; input_i<argNr; input_i++)
+    {
+        Result.optimalArg[input_i] = currentArg[input_i];
+    }
+
+    Result.outerLoopCount = i;
+
+}
+
+
+
+
+}
+
+using namespace jorg;
 
 #endif
