@@ -121,11 +121,11 @@ protected:
 class cOptimization
 {
 public:
-cOptimization(float (*costFctPt_)(float* argArray), int argNr_)
+cOptimization(double (*costFctPt_)(double* argArray), int argNr_)
 {
     costFctPt = costFctPt_;
     argNr = argNr_;
-    Result.optimalArg = new float[argNr];
+    Result.optimalArg = new double[argNr];
     perturbationNr = 1e-3;
     initialGain = -2;
     innerLoopMax = 30;
@@ -136,25 +136,51 @@ cOptimization(float (*costFctPt_)(float* argArray), int argNr_)
 }
     struct
     {
-        float optimalCost;
-        float *optimalArg;
+        double optimalCost;
+        double *optimalArg;
         int outerLoopCount;
     } Result;
 
-    void startOptimization(float *initialInput_ = 0, int maxSteps_ = 100, float threshold_ = 1e-4);
+    void startOptimization(double *initialInput_ = 0, int maxSteps_ = 100, double threshold_ = 1e-6);
 
 
 private:
-float (*costFctPt)(float* argArray);
+double (*costFctPt)(double* argArray);
 int argNr;
-float perturbationNr;
-float initialGain;
+double perturbationNr;
+double initialGain;
 int innerLoopMax;
 
 };
 
 
+///////////////////////////////////////// Dynamic Array
+template <class T> class cList
+{
+public:
+    cList(): listLength(0) // Constructor
+    {
 
+    }
+    cList(cList &obj): listLength(0) // Copy Constructor
+    {
+        attachList(obj);
+    }
+
+    ~cList() // Destructor
+    {
+        if (listLength > 0) delete data;
+    }
+    void attach(T entry);
+    void attachList(cList<T> &otherList);
+    void clearList();
+    T& operator[](int i);
+    int length();
+
+private:
+    T *data;
+    int listLength;
+};
 
 
 //////////////////////////////////////////////////////////////////////////Definitions
@@ -466,12 +492,12 @@ template <uint8_t n> inline cMatrix<n,1> solveLES(cMatrix<n,n> A, cMatrix<n,1> b
 }
 
 ////////////////////////////////// Optimization
-inline void cOptimization::startOptimization(float *initialInput_, int maxSteps_, float threshold_)
+inline void cOptimization::startOptimization(double *initialInput_, int maxSteps_, double threshold_)
 {
     int i=0;
 
     ////////////////////////////////// Initial Argument
-    float currentArg[argNr];
+    double currentArg[argNr];
     if (initialInput_ == 0)
     {
         for (int j=0; j<argNr; j++) // init to 0
@@ -491,21 +517,21 @@ inline void cOptimization::startOptimization(float *initialInput_, int maxSteps_
     ////////////////////////////////// Outer Loop
     while (i<maxSteps_)
     {
-        float currentCost = costFctPt(currentArg); // current cost
+        double currentCost = costFctPt(currentArg); // current cost
 
      ////////////////////////////////// Gradient
-        float gradient[argNr];
-        float gainNorm = 0;
+        double gradient[argNr];
+        double gainNorm = 0;
         // Generate gradient
         for (int input_i=0; input_i<argNr; input_i++) // For every Input
         {
-            float perturbedInput[argNr];
+            double perturbedInput[argNr];
             for (int perturbed_i=0; perturbed_i<argNr; perturbed_i++) // generate perturbed Input
             {
                 perturbedInput[perturbed_i] = currentArg[perturbed_i];
                 if (perturbed_i == input_i) perturbedInput[perturbed_i] += perturbationNr;
             }
-            float perturbedCost = costFctPt(perturbedInput);
+            double perturbedCost = costFctPt(perturbedInput);
             gradient[input_i] = (1/perturbationNr)*(perturbedCost-currentCost);
             gainNorm += gradient[input_i]*gradient[input_i];
         }
@@ -513,16 +539,16 @@ inline void cOptimization::startOptimization(float *initialInput_, int maxSteps_
 
      ////////////////////////////////// Backtracking Linesearch
         int backtracking_i = 0;
-        float gain = initialGain;
+        double gain = initialGain;
 
         while (backtracking_i<innerLoopMax)
         {
-            float inputCandidate[argNr];
+            double inputCandidate[argNr];
             for (int input_i=0; input_i<argNr; input_i++) // Calculate Step
             {
                 inputCandidate[input_i] = currentArg[input_i] + gain*gradient[input_i];
             }
-            float costCandidate = costFctPt(inputCandidate);
+            double costCandidate = costFctPt(inputCandidate);
 
             // Test Armijo Condition
             if (costCandidate <= currentCost + 0.5*gain*gainNorm)
@@ -562,6 +588,72 @@ inline void cOptimization::startOptimization(float *initialInput_, int maxSteps_
 
 }
 
+
+
+///////////////////////////////////////////// cList
+
+
+template <class T> inline void cList<T>::attach(T entry)
+{
+    T backupArray[listLength];
+    for (int i=0; i<listLength; i++)
+    {
+        backupArray[i] = data[i];
+    }
+    if (listLength > 0) delete data;
+    data = new T[listLength+1];
+    for (int i=0; i<listLength; i++)
+    {
+        data[i] = backupArray[i];
+    }
+    data[listLength] = entry;
+    listLength++;
+
+}
+
+
+template <class T> inline void cList<T>::attachList(cList<T> &otherList)
+{
+    T backupArray[listLength];
+    for (int i=0; i<listLength; i++)
+    {
+        backupArray[i] = data[i];
+    }
+    if (listLength > 0) delete data;
+    data = new T[listLength+otherList.length()];
+    for (int i=0; i<listLength; i++)
+    {
+        data[i] = backupArray[i];
+    }
+
+    for (int i=0; i<otherList.length(); i++)
+    {
+        data[i+listLength] = otherList[i];
+    }
+
+
+    listLength += otherList.length();
+
+}
+
+template <class T> inline T& cList<T>::operator[](int i)
+{
+    return data[i];
+}
+
+
+
+template <class T> inline int cList<T>::length()
+{
+    return listLength;
+}
+
+
+template <class T> inline void cList<T>::clearList()
+{
+    if (listLength > 0) delete data;
+    listLength = 0;
+}
 
 
 
